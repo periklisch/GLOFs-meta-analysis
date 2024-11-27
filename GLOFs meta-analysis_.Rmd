@@ -1,0 +1,193 @@
+---
+title: "Glacier Lake Outburst Floods: meta-analysis to pool mortality incidence rates"
+author: "Periklis Charalampous, Institute of Health and Society, UCLouvain, Belgium"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r, include=FALSE, echo=TRUE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r, echo=FALSE, include=TRUE}
+# Load packages, functions, and data
+# Erase memory
+rm(list = ls(all.names = TRUE))
+
+# Libraries
+library("meta")
+library("dplyr")
+library("metafor")
+library("boot")
+library("readxl")
+library("ggplot2")
+
+# Load data
+dta <- read_excel("dta.xlsx", col_names = TRUE)
+
+# Sort data
+dta_sorted <- dta %>%
+  arrange(Country, Year)
+dta_sorted$Country <- factor(dta_sorted$Country, levels = unique(dta_sorted$Country))
+```
+
+# Main meta-analysis
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+dta_1 <- metarate(Death, PTAR, data = dta_sorted, studlab = Country, method = "GLMM")
+dta_1
+
+# Forest plot for main meta-analysis
+png("forest_plot_main_final.png", width = 700, height = 800)
+forest(dta_1, fixed = FALSE, random = TRUE)
+periodmeta<- metarate(Death,
+                      PTAR, 
+                      data = dta_sorted, 
+                      studlab = Country, 
+                      method = "GLMM",
+                      tau.common = FALSE,
+                      hakn= TRUE, 
+                      method.tau="ML")
+periodmeta
+
+forest(periodmeta,
+       sortvar = Country,
+       col.square = "gray",
+       col.square.lines = "gray",
+       col.diamond.random = "black",
+       col.diamond.lines.random = "black",
+       allstudies = TRUE,
+       comb.fixed= FALSE,
+       comb.random = TRUE,
+       col.label.left="red",
+       col.label.right="blue",
+       hetstat=FALSE,
+       test.overall.random = TRUE,
+       digits.mean=2,
+       digits.sd=2,
+       digits.weight = 0,
+       weight.study = "random",
+       test.effect.subgroup.random = TRUE,
+       leftcols=c("studlab", "Year", "Death","PTAR"),
+       leftlabs = c("Country", "Year", "Death","PTAR"),
+       overall = TRUE,
+       print.byvar = FALSE,
+       col.by="navy",
+       addrow.subgroups=TRUE,
+       addrow.overall=TRUE,
+       addrow=TRUE,
+       label.test.effect.subgroup.random="Subgroup effect",
+       test.subgroup.random = TRUE)
+dev.off()
+
+# Plot results: main meta-analysis
+```
+
+# Sub-analysis_1
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+# Sort data
+dta$Region<-dta$Region
+region1meta<- metarate(Death,
+                      PTAR, 
+                      data = dta, 
+                      studlab = Country, 
+                      method = "GLMM",
+                      byvar = Region,
+                      tau.common = FALSE,
+                      hakn= TRUE, 
+                      method.tau="ML")
+dta_sorted <- dta %>%
+  arrange(Region, Country, Year)
+
+# metarate
+png("forest_plot_sub_analysis.png", width = 700, height = 950)
+forest(region1meta,
+       sortvar = Country,
+       col.square = "gray",
+       col.square.lines = "gray",
+       col.diamond.random = "black",
+       col.diamond.lines.random = "black",
+       allstudies = TRUE,
+       comb.fixed= FALSE,
+       comb.random = TRUE,
+       col.label.left="red",
+       col.label.right="blue",
+       hetstat=FALSE,
+       test.overall.random = TRUE,
+       digits.mean=2,
+       digits.sd=2,
+       digits.weight = 0,
+       weight.study = "random",
+       test.effect.subgroup.random = TRUE,
+       leftcols=c("studlab", "Year", "Death","PTAR"),
+       leftlabs = c("Country", "Year", "Death","PTAR"),
+       overall = TRUE,
+       print.byvar = FALSE,
+       col.by="navy",
+       addrow.subgroups=TRUE,
+       addrow.overall=TRUE,
+       addrow=TRUE,
+       label.test.effect.subgroup.random="Subgroup effect",
+       test.subgroup.random = TRUE)
+dev.off()
+
+# Plot results: sub-analysis_1
+```
+
+# Sub-analysis_2
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+# Sort data
+dta$Period <- cut(dta$Year,
+                  breaks = c(-Inf, 1900, 2000, Inf),
+                  labels = c("Before 1900", "Between 1900 and 1999", "After 2000"))
+dta_sorted <- dta %>%
+  arrange(Country, Year)
+
+periodmeta_2<- metarate(Death,
+                       PTAR, 
+                       data = dta, 
+                       studlab = Country, 
+                       method = "GLMM",
+                       byvar = Period,
+                       tau.common = FALSE,
+                       hakn= TRUE, 
+                       method.tau="ML")
+
+# metarate
+png("forest_plot_main_sub-analysis_2.png", width = 700, height = 950)
+forest(periodmeta_2,
+       sortvar = Country,  
+       col.square = "gray",
+       col.square.lines = "gray",
+       col.diamond.random = "black",
+       col.diamond.lines.random = "black",
+       allstudies = TRUE,
+       comb.fixed = FALSE,
+       comb.random = TRUE,
+       col.label.left = "red",
+       col.label.right = "blue",
+       hetstat = TRUE,
+       test.overall.random = TRUE,
+       digits.mean = 2,
+       digits.sd = 2,
+       digits.weight = 0,
+       weight.study = "random",
+       test.effect.subgroup.random = TRUE,
+       leftcols = c("studlab", "Year", "Death", "PTAR"),
+       leftlabs = c("Country", "Year", "Death", "PTAR"),
+       overall = TRUE,
+       print.byvar = FALSE,
+       col.by = "navy",
+       addrow.subgroups = TRUE,
+       addrow.overall = TRUE,
+       addrow = TRUE,
+       label.test.effect.subgroup.random = "Subgroup effect",
+       test.subgroup.random = TRUE)
+dev.off()
+
+# Plot results: sub-analysis_2
+```
